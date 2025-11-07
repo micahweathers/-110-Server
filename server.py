@@ -1,8 +1,10 @@
 from flask import Flask, jsonify, request
 from http import HTTPStatus
+from flask_cors import CORS
 
 
-app = Flask(__name__) #insance of Flask called Dunder method
+app = Flask(__name__)
+CORS(app, origins=["http://localhost:5173", "http://localhost:5174"])
 
 
 @app.route("/", methods=["GET"])
@@ -64,9 +66,7 @@ def user():
     return user_info
 
 
-#Session3
-#Path paramters
-
+# Session3 - Path parameters
 @app.route("/greet/<string:name>")
 def greet(name):
     return f"Hiya {name}"
@@ -104,22 +104,20 @@ products = [
         "image": "https://picsum.photos/seed/3/300/300"
     }
 ]
-#GET api/products endpoint returns list of products
 
 
+# GET api/products endpoint returns list of products
 @app.route("/api/products", methods=["GET"])
 def product_list():
-
     return jsonify({
         "success": True,
         "message": "Products retrieved",
         "data": products
-        }), HTTPStatus.OK #200
+    }), HTTPStatus.OK
 
 
 @app.route("/api/products/<int:product_id>", methods=["GET"])
 def get_product_by_id(product_id):
-
     print(product_id)
     for product in products:
         if product["_id"] == product_id:
@@ -135,9 +133,44 @@ def get_product_by_id(product_id):
     }), HTTPStatus.NOT_FOUND
 
 
-#POST /api/products
+# UPDATE
+@app.route("/api/products/<int:product_id>", methods=["PUT"])
+def update_product(product_id):
+    data = request.get_json()
+
+    for product in products:
+        if product["_id"] == product_id:
+            product["title"] = data.get("title")
+            product["price"] = data.get("price")
+            product["category"] = data.get("category")
+            product["image"] = data.get("image")
+            return jsonify({
+                "success": True,
+                "message": "Product Updated",
+                "data": product
+            }), HTTPStatus.OK
+        
+    return jsonify({
+        "success": False,
+        "message": "Product Not Found",
+    }), HTTPStatus.NOT_FOUND
 
 
+# DELETE
+@app.route("/api/products/<int:id>", methods=["DELETE"])
+def delete_product(id):
+    for index, product in enumerate(products):
+        if product["_id"] == id:
+            products.pop(index)
+            return jsonify({}), HTTPStatus.NO_CONTENT
+    
+    return jsonify({
+        "success": False,
+        "message": "Product Not Found"
+    }), HTTPStatus.NOT_FOUND
+
+
+# POST /api/products
 @app.route("/api/products", methods=["POST"])
 def create_product():
     new_product = request.get_json()
@@ -150,32 +183,30 @@ def create_product():
         "data": new_product
     }), HTTPStatus.CREATED
 
-#--------Coupons----------
 
-
+# -------- Coupons ----------
 coupons = [
-  {"_id": 1, "code": "WELCOME10", "discount": 10},
-  {"_id": 2, "code": "SPOOKY25", "discount": 25},
-  {"_id": 3, "code": "VIP50", "discount": 50}
+    {"_id": 1, "code": "WELCOME10", "discount": 10},
+    {"_id": 2, "code": "SPOOKY25", "discount": 25},
+    {"_id": 3, "code": "VIP50", "discount": 50}
 ]
 
 
+# GET all coupons
 @app.route("/api/coupons", methods=["GET"])
 def coupon_list():
-
     return jsonify({"coupons": coupons})
 
 
+# GET coupon count
 @app.route("/api/coupons/count", methods=["GET"])
 def coupon_count():
-
     return jsonify({"count": len(coupons)})
-#Assignment 3 get coupon by id, create coupon
 
 
+# GET coupon by id
 @app.route("/api/coupons/<int:coupon_id>", methods=["GET"])
 def get_coupon_by_id(coupon_id):
-
     print(coupon_id)
     for coupon in coupons:
         if coupon["_id"] == coupon_id:
@@ -191,6 +222,7 @@ def get_coupon_by_id(coupon_id):
     }), HTTPStatus.NOT_FOUND
 
 
+# POST Create new coupon
 @app.route("/api/coupons", methods=["POST"])
 def create_coupon():
     new_coupon = request.get_json()
@@ -202,6 +234,52 @@ def create_coupon():
         "message": "Coupon Created",
         "data": new_coupon
     }), HTTPStatus.CREATED
+
+
+# PUT Update coupon
+@app.route("/api/coupons/<int:coupon_id>", methods=["PUT"])
+def update_coupon(coupon_id):
+    data = request.get_json()
+
+    for coupon in coupons:
+        if coupon["_id"] == coupon_id:
+            coupon["code"] = data.get("code")
+            coupon["discount"] = data.get("discount")
+            return jsonify({
+                "success": True,
+                "message": "Coupon Updated",
+                "data": coupon
+            }), HTTPStatus.OK
+        
+    return jsonify({
+        "success": False,
+        "message": "Coupon Not Found",
+    }), HTTPStatus.NOT_FOUND
+
+
+# DELETE coupon in API
+@app.route("/api/coupons/<int:coupon_id>", methods=["DELETE"])
+def delete_coupon(coupon_id):
+    for index, coupon in enumerate(coupons):
+        if coupon["_id"] == coupon_id:
+            coupons.pop(index)
+            return jsonify({}), HTTPStatus.NO_CONTENT
+    
+    return jsonify({
+        "success": False,
+        "message": "Coupon Not Found"
+    }), HTTPStatus.NOT_FOUND
+
+
+# GET coupons with discount in API
+@app.route("/api/coupons/search", methods=["GET"])
+def search_coupons():
+    filtered_coupons = [coupon for coupon in coupons if coupon["discount"] < 30]
+    return jsonify({
+        "success": True,
+        "message": "Filtered coupons retrieved",
+        "data": filtered_coupons
+    }), HTTPStatus.OK
 
 
 if __name__ == "__main__":
